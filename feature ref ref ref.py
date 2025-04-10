@@ -23,59 +23,53 @@ from scipy.integrate import cumulative_trapezoid
 
 def create_dir(file):
     try:
-        os.makedirs(file) # Create a directory with the given name, including parent directories if needed
+        os.makedirs(file)
     except FileExistsError:
         pass
 
-# Ignore performance-related warnings from pandas to prevent unnecessary alerts
 warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
 
-# Suppress divide-by-zero and invalid operations warnings in NumPy calculations
-np.seterr(divide='ignore', invalid='ignore')
 
-# Ignore specific NumPy warnings related to deprecated visible behavior
+
+np.seterr(divide='ignore', invalid='ignore')
 # warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
 warnings.simplefilter('ignore', category=DeprecationWarning)
-np.seterr(divide='ignore', invalid='ignore')
 
 g = 9.8
 
-thresh = 0.003328*g #threshold to determine when a signal is significant. anything below ignored
-fs = 30 # sampling rate
-thresh_count = 2 #must twice in a row for it to be siginificant
-dx = 1/fs #inverse sampling rate
+thresh = 0.003328*g
+fs = 30
+thresh_count = 2
+dx = 1/fs
 
-fc_hp = 2.5 #anything below 25 ignored
-fc_lp = 0.25 #anything above 0.25 ignored
+fc_hp = 2.5
+fc_lp = 0.25
+
 
 def main():
+    print("hi1")
     start_idx, end_idx = linear_movements_detection(1, "Test")
     print(start_idx)
     print(end_idx)
 
-    print("this is for load")
-    hi = load(start_idx, end_idx)
-    print(hi)
+    for split in ['']:
+    
+        hi = load(start_idx, end_idx, split)
+        print(hi)
+    
     # args = sys.argv[1]
     
     # id = ast.literal_eval(args.split('_')[0])
-    # week = args.split('_')[1] #split the system arguments
+    # week = args.split('_')[1]
             
-    # # linear_movements_detection(id, week)
-    # start_idx, end_idx = linear_movements_detection(1, "test")
+    # linear_movements_detection(id, week)
     
+    # for split in ['']:
     
-    # # for split in ['']:
-    # #     print("this is for load")
-    # #     hi = load(id, week, split, start_idx, end_idx)
-    # #     print(hi)
-
-    # print("this is for load")
-    # hi = load(start_idx, end_idx)
-    # print(hi)
+    #     load(id, week, split)
     
 
-def get_zero_crossing(velocity): #identify where the velocity changes direction (changes sign from negative to positive)
+def get_zero_crossing(velocity):
 
     zero_crossing = []
 
@@ -89,13 +83,13 @@ def get_zero_crossing(velocity): #identify where the velocity changes direction 
     return np.array(zero_crossing)
 
 
-def get_SM_displacement(vel): #Uses trapezoidal integration to compute displacement from velocity data.
+def get_SM_displacement(vel):
     
     displacement = np.trapz(vel, np.arange(len(vel))/fs)
 
     return displacement
 
-def normalization(data): #Rescales data to the range [0,1] for uniformity in processing.
+def normalization(data):
     return (data-np.min(data))/((np.max(data)-np.min(data)))
 
 def get_PC_scores(data):
@@ -116,7 +110,7 @@ def get_features(data):
 
     return np.nanmin(data), np.nanmax(data), np.nanmean(data), np.nanmedian(data), np.nanstd(data),  get_10percentile(data), get_90percentile(data), iqr(data)
 
-def get_vel_acc_jerk_features(data): #to extract only the things you want and reduce noise, so sudden things are ignored etc.
+def get_vel_acc_jerk_features(data):
     min_result = np.vectorize(np.nanmin)(data)
     max_result = np.vectorize(np.nanmax)(data)
     mean_result = np.vectorize(np.nanmean)(data)
@@ -139,7 +133,7 @@ def get_vel_acc_jerk_features(data): #to extract only the things you want and re
     features.extend(get_features(iqr_result))
     features.extend(get_features(kur_result))
     
-    return features #extract features to put into machine learning models
+    return features
 
 
 def DBSCAN_predict(training_set, testing_set, epsilon, k=5):
@@ -178,16 +172,10 @@ def getBouts(local_acc, start_idx, end_idx):
         activity_bout_jerk.append(np.gradient(activity_bout_acc[len(activity_bout_acc)-1], dx, axis=0))
         # activity_bout_vel.append(it.cumtrapz(activity_bout_acc[len(activity_bout_acc)-1], dx=dx, axis=0))
         activity_bout_vel.append(it.cumulative_trapezoid(activity_bout_acc[len(activity_bout_acc)-1], dx=dx, axis=0))
-
         zero_crossing[0].append(get_zero_crossing(activity_bout_vel[len(activity_bout_acc)-1][:, 0]))
         zero_crossing[1].append(get_zero_crossing(activity_bout_vel[len(activity_bout_acc)-1][:, 1]))
 
-    
-    return np.array(activity_bout_acc, dtype=object), \
-       np.array(activity_bout_jerk, dtype=object), \
-       np.array(activity_bout_vel, dtype=object), \
-       np.array(zero_crossing, dtype=object)
-    # return np.array(activity_bout_acc), np.array(activity_bout_jerk), np.array(activity_bout_vel), np.array(zero_crossing)
+    return np.array(activity_bout_acc), np.array(activity_bout_jerk), np.array(activity_bout_vel), np.array(zero_crossing)
 
 
 
@@ -865,10 +853,12 @@ def get_linear_movements(local_acc):
 def mask(v):
     return int(int(v/54000)%2)
     
-def load(start_idx, end_idx):
+
+
+def load(start_idx, end_idx, split):
     
     
-    # folder = 'all' if (split == '') else split.replace('_', '')
+    folder = 'all' if (split == '') else split.replace('_', '')
     
     # if os.path.exists('features/{}/{}_{}{}.csv'.format(folder, id, week, split)):
     #     return
@@ -893,17 +883,9 @@ def load(start_idx, end_idx):
 
         #     if not (affected_limb == raw_file.split('/')[-2]):
         #         return
-
-        # acc = np.array(pd.read_csv(raw_file, skiprows=10, header=None, low_memory=False))
-        print("coming in here")
         SCRIPT_DIR = r"C:\AHHA Lab\AHHA Pipeline"
-        csv_file = os.path.join(SCRIPT_DIR, "real_data.csv")
-        print("coming in here 2")
-        df = pd.read_csv(csv_file)
-        print("coming in here3")       
-        # Convert DataFrame to NumPy array
-        acc = df.to_numpy(dtype=float)
-        print("coming in here 4")
+        raw_file = os.path.join(SCRIPT_DIR, "real_data.csv")
+        acc = np.array(pd.read_csv(raw_file, skiprows=10, header=None, low_memory=False))
 
 
         if (acc[0][0] == 'Accelerometer X'):
@@ -913,11 +895,11 @@ def load(start_idx, end_idx):
         
         acc = filtfilt(b, a, acc, axis=0)
         
-        # if ("TW" in raw_file or "Baseline" in raw_file):
-        #     acc = acc[90*60*fs:]
+        if ("TW" in raw_file or "Baseline" in raw_file):
+            acc = acc[90*60*fs:]
             
-        # if ("Case" in raw_file):
-        #     acc = acc[60*60*fs:]
+        if ("Case" in raw_file):
+            acc = acc[60*60*fs:]
         
         # if (id < 100):
         #     start_idx = np.load('../../work/pi_sunghoonlee_umass_edu/Ryan/referent_p2p_idx/{}_{}_start.npy'.format(id, week))
@@ -932,201 +914,38 @@ def load(start_idx, end_idx):
         #     end_idx = np.load(glob.glob('../../work/pi_sunghoonlee_umass_edu/Ryan/chronic_p2p_idx/{}_{}_end.npy'.format(id, week))[0])
             
 
-        # if (split == '_even'):
-        #     mask_array = np.array(list(map(mask, start_idx)))
+        if (split == '_even'):
+            mask_array = np.array(list(map(mask, start_idx)))
 
-        #     start_idx = start_idx[np.where(mask_array == 0)[0]]
-        #     end_idx = end_idx[np.where(mask_array == 0)[0]]
+            start_idx = start_idx[np.where(mask_array == 0)[0]]
+            end_idx = end_idx[np.where(mask_array == 0)[0]]
 
-        # elif (split == '_odd'):
-        #     mask_array = np.array(list(map(mask, start_idx)))
+        elif (split == '_odd'):
+            mask_array = np.array(list(map(mask, start_idx)))
 
-        #     start_idx = start_idx[np.where(mask_array == 1)[0]]
-        #     end_idx = end_idx[np.where(mask_array == 1)[0]]
+            start_idx = start_idx[np.where(mask_array == 1)[0]]
+            end_idx = end_idx[np.where(mask_array == 1)[0]]
 
-        # else:
-        #     pass
+        else:
+            pass
 
             
         df_single_subject = get_all_features(acc, start_idx, end_idx)
 
-
-        # df_single_subject['ID'] = id
-        # df_single_subject['Week'] = week
-
-        # df_single_subject.to_csv('features/{}/{}_{}{}.csv'.format(folder, id, week, split), index=0)
-        
         np.set_printoptions(threshold=np.inf)
         features_array = df_single_subject.to_numpy()
         np.set_printoptions(suppress=False, precision=8, linewidth=200)
 
         # y_pred = model.predict(features_array)
         return features_array
+        return df_single_subject.to_numpy()    
     
     except Exception as e:
         with open('{}_{}.log'.format(id, week), 'w') as file_open:
 
             file_open.write(f"An error occurred: {str(traceback.format_exc())}\n")
-
-# def load(id, week, split):
-    
-    
-#     folder = 'all' if (split == '') else split.replace('_', '')
-    
-#     # if os.path.exists('features/{}/{}_{}{}.csv'.format(folder, id, week, split)):
-#     #     return
-    
-#     try:
-        
-#         df_all = pd.DataFrame(columns=columns)
-#         df_meta = pd.read_csv('Data/All patients meta.csv')
-
-
-#         if (id < 100):
-#             raw_file = glob.glob('../../work/pi_sunghoonlee_umass_edu/Ryan/Referent/Case{}/*{}*.csv'.format(id, week))[0]
-#         elif (id < 1000):
-#             affected_limb = 'RUE' if df_meta.loc[df_meta['ID'] == id, 'AffectedSide'].values[0] == 'Right' else 'LUE'
-#             raw_file = glob.glob('../../work/pi_sunghoonlee_umass_edu/Ryan/Acute patients/{}/Week{}/{}/*.csv'.format(id, week, affected_limb))[0]
-
-#             if not (affected_limb == raw_file.split('/')[-2]):
-#                 return
-#         else:
-#             affected_limb = 'RUE' if df_meta.loc[df_meta['ID'] == id, 'AffectedSide'].values[0] == 'Right' else 'LUE'
-#             raw_file = glob.glob('../../work/pi_sunghoonlee_umass_edu/Ryan/Chronic patients/{}/{}*/{}/*RAW.csv'.format(id, week, affected_limb))[0]
-
-#             if not (affected_limb == raw_file.split('/')[-2]):
-#                 return
-
-#         acc = np.array(pd.read_csv(raw_file, skiprows=10, header=None, low_memory=False))
-
-
-#         if (acc[0][0] == 'Accelerometer X'):
-#             acc = acc[1:].astype(float)
-
-#         b, a = butter(6, [fc_lp/(fs/2), fc_hp/(fs/2)], btype='bandpass')
-        
-#         acc = filtfilt(b, a, acc, axis=0)
-        
-#         if ("TW" in raw_file or "Baseline" in raw_file):
-#             acc = acc[90*60*fs:]
             
-#         if ("Case" in raw_file):
-#             acc = acc[60*60*fs:]
-        
-#         if (id < 100):
-#             start_idx = np.load('../../work/pi_sunghoonlee_umass_edu/Ryan/referent_p2p_idx/{}_{}_start.npy'.format(id, week))
-#             end_idx = np.load('../../work/pi_sunghoonlee_umass_edu/Ryan/referent_p2p_idx/{}_{}_end.npy'.format(id, week))
-
-#         elif (id < 1000):
-#             start_idx = np.load('../../work/pi_sunghoonlee_umass_edu/Ryan/acute_p2p_idx/{}_{}_start.npy'.format(id, week))
-#             end_idx = np.load('../../work/pi_sunghoonlee_umass_edu/Ryan/acute_p2p_idx/{}_{}_end.npy'.format(id, week))
-
-#         else:
-#             start_idx = np.load(glob.glob('../../work/pi_sunghoonlee_umass_edu/Ryan/chronic_p2p_idx/{}_{}_start.npy'.format(id, week))[0])
-#             end_idx = np.load(glob.glob('../../work/pi_sunghoonlee_umass_edu/Ryan/chronic_p2p_idx/{}_{}_end.npy'.format(id, week))[0])
             
-
-#         if (split == '_even'):
-#             mask_array = np.array(list(map(mask, start_idx)))
-
-#             start_idx = start_idx[np.where(mask_array == 0)[0]]
-#             end_idx = end_idx[np.where(mask_array == 0)[0]]
-
-#         elif (split == '_odd'):
-#             mask_array = np.array(list(map(mask, start_idx)))
-
-#             start_idx = start_idx[np.where(mask_array == 1)[0]]
-#             end_idx = end_idx[np.where(mask_array == 1)[0]]
-
-#         else:
-#             pass
-
-            
-#         df_single_subject = get_all_features(acc, start_idx, end_idx)
-
-
-#         df_single_subject['ID'] = id
-#         df_single_subject['Week'] = week
-
-#         df_single_subject.to_csv('features/{}/{}_{}{}.csv'.format(folder, id, week, split), index=0)
-
-    
-#         return    
-    
-#     except Exception as e:
-#         with open('{}_{}.log'.format(id, week), 'w') as file_open:
-
-#             file_open.write(f"An error occurred: {str(traceback.format_exc())}\n")
-            
-# def linear_movements_detection(id, week):
-      
-#     try:
-        
-#         df_all = pd.DataFrame(columns=columns)
-#         df_meta = pd.read_csv('Data/All patients meta.csv')
-
-
-#         if (id < 100):
-#             raw_file = glob.glob('../../work/pi_sunghoonlee_umass_edu/Ryan/Referent/Case{}/*{}*.csv'.format(id, week))[0]
-#         elif (id < 1000):
-#             affected_limb = 'RUE' if df_meta.loc[df_meta['ID'] == id, 'AffectedSide'].values[0] == 'Right' else 'LUE'
-#             raw_file = glob.glob('../../work/pi_sunghoonlee_umass_edu/Ryan/Acute patients/{}/Week{}/{}/*.csv'.format(id, week, affected_limb))[0]
-
-#             if not (affected_limb == raw_file.split('/')[-2]):
-#                 return
-#         else:
-#             affected_limb = 'RUE' if df_meta.loc[df_meta['ID'] == id, 'AffectedSide'].values[0] == 'Right' else 'LUE'
-#             raw_file = glob.glob('../../work/pi_sunghoonlee_umass_edu/Ryan/Chronic patients/{}/{}*/{}/*RAW.csv'.format(id, week, affected_limb))[0]
-
-#             if not (affected_limb == raw_file.split('/')[-2]):
-#                 return
-
-#         acc = np.array(pd.read_csv(raw_file, skiprows=10, header=None, low_memory=False))
-
-
-#         if (acc[0][0] == 'Accelerometer X'):
-#             acc = acc[1:].astype(float)
-
-#         b, a = butter(6, [fc_lp/(fs/2), fc_hp/(fs/2)], btype='bandpass')
-        
-#         acc = filtfilt(b, a, acc, axis=0)
-        
-#         if ("TW" in raw_file or "Baseline" in raw_file):
-#             acc = acc[90*60*fs:]
-            
-#         if ("Case" in raw_file):
-#             acc = acc[60*60*fs:]
-        
-        
-#         if (id < 100):
-            
-#             start_idx, end_idx = get_linear_movements(acc)
-
-#             np.save('../../work/pi_sunghoonlee_umass_edu/Ryan/referent_p2p_idx/{}_{}_start.npy'.format(id, week), start_idx)
-#             np.save('../../work/pi_sunghoonlee_umass_edu/Ryan/referent_p2p_idx/{}_{}_end.npy'.format(id, week), end_idx)
-
-        
-#         elif (id < 1000):
-#             start_idx, end_idx = get_linear_movements(acc)
-
-#             np.save('../../work/pi_sunghoonlee_umass_edu/Ryan/acute_p2p_idx/{}_{}_start.npy'.format(id, week), start_idx)
-#             np.save('../../work/pi_sunghoonlee_umass_edu/Ryan/acute_p2p_idx/{}_{}_end.npy'.format(id, week), end_idx)
-        
-        
-#         else:
-        
-#             start_idx, end_idx = get_linear_movements(acc)
-
-#             np.save('../../work/pi_sunghoonlee_umass_edu/Ryan/chronic_p2p_idx/{}_{}_start.npy'.format(id, week), start_idx)
-#             np.save('../../work/pi_sunghoonlee_umass_edu/Ryan/chronic_p2p_idx/{}_{}_end.npy'.format(id, week), end_idx)
-
-
-#         return    
-    
-#     except Exception as e:
-#         with open('{}_{}.log'.format(id, week), 'w') as file_open:
-
-#             file_open.write(f"An error occurred: {str(traceback.format_exc())}\n")
             
 def linear_movements_detection(id, week):
       
@@ -1150,70 +969,26 @@ def linear_movements_detection(id, week):
 
         #     if not (affected_limb == raw_file.split('/')[-2]):
         #         return
-
-        # acc = np.array(pd.read_csv(raw_file, skiprows=10, header=None, low_memory=False))
+        print("hi1")
         SCRIPT_DIR = r"C:\AHHA Lab\AHHA Pipeline"
-        csv_file = os.path.join(SCRIPT_DIR, "real_data.csv")
-        df = pd.read_csv(csv_file)
-        
-        # Convert DataFrame to NumPy array
-        acc = df.to_numpy(dtype=float)
+        raw_file = os.path.join(SCRIPT_DIR, "real_data.csv")
+        acc = np.array(pd.read_csv(raw_file, skiprows=10, header=None, low_memory=False))
 
-
+        print("hi1")
         if (acc[0][0] == 'Accelerometer X'):
-            print("hello")
             acc = acc[1:].astype(float)
 
         b, a = butter(6, [fc_lp/(fs/2), fc_hp/(fs/2)], btype='bandpass')
-        print(f"value of b: {b}")
-        print(f"value of a: {a}")
-        # print(f"value of acc: {acc}")
-        # acc = np.pad(acc, ((20, 20), (0, 0)), mode='edge')
+        
         acc = filtfilt(b, a, acc, axis=0)
-        print("come on")
-        # print(f"value of acc: {acc}")
-        print("\n=== DATA DIAGNOSTICS ===")
-        print("First 5 filtered samples:")
-        print(acc[:5])
-        print("\nStats:")
-        print(f"Max acceleration: {np.max(acc):.2f}g")
-        print(f"Min acceleration: {np.min(acc):.2f}g")
-        print(f"Mean absolute accel: {np.mean(np.abs(acc)):.4f}g")
-
-        starts, ends = get_linear_movements(acc)
-        
-        # Print results
-        print("\n=== MOVEMENT DETECTION RESULTS ===")
-        print(f"Total samples: {len(acc)}")
-        print(f"Detected {len(starts)} movements:")
-        
-        for i, (s,e) in enumerate(zip(starts, ends)):
-            print(f"Movement {i+1}: Samples {s}-{e} ({(e-s)/fs:.2f} sec)")
-            print(f"Peak accel: {np.max(acc[s:e]):.2f}g")
-        
-        return starts, ends
-
-        starts = [5]  # Fake detected starts (replace with your logic)
-        ends = [15]   # Fake detected ends
-
-        # Print results
-        print("\n--- Linear Movement Detection Results ---")
-        print(f"Patient ID: {id}, Week: {week}")
-        print(f"Total samples processed: {len(acc)}")
-        print(f"Detected movements: {len(starts)}")
-        for i, (start, end) in enumerate(zip(starts, ends)):
-            duration_seconds = (end - start) / fs
-            print(f"Movement {i+1}: Samples {start}-{end} ({duration_seconds:.2f} seconds)")
-
-        return np.array(starts), np.array(ends)
-        
-        # if ("TW" in raw_file or "Baseline" in raw_file):
-        #     acc = acc[90*60*fs:]
+        print("hi2")
+        if ("TW" in raw_file or "Baseline" in raw_file):
+            acc = acc[90*60*fs:]
             
-        # if ("Case" in raw_file):
-        #     acc = acc[60*60*fs:]
+        if ("Case" in raw_file):
+            acc = acc[60*60*fs:]
         
-        
+        start_idx, end_idx = get_linear_movements(acc)
         # if (id < 100):
             
         #     start_idx, end_idx = get_linear_movements(acc)
@@ -1237,28 +1012,14 @@ def linear_movements_detection(id, week):
         #     np.save('../../work/pi_sunghoonlee_umass_edu/Ryan/chronic_p2p_idx/{}_{}_end.npy'.format(id, week), end_idx)
 
 
-        # return    
+        return start_idx, end_idx
     
     except Exception as e:
         with open('{}_{}.log'.format(id, week), 'w') as file_open:
 
             file_open.write(f"An error occurred: {str(traceback.format_exc())}\n")
-
+    
 
 if __name__ == "__main__":
-    # print("=== Testing movement detection ===")
-    # start_idx, end_idx = linear_movements_detection(1, "Test")
-    # print(start_idx)
-    # print(end_idx)
-
-    # print("this is for load")
-    # hi = load(start_idx, end_idx)
-    # print(hi)
-
     main()
-    
-    # if len(test_starts) == 0:
-    #     print("\nNo movements detected! Try:")
-    #     print("1. Adding more samples (need at least 30 for 1sec window)")
-    #     print("2. Lowering activity_thresh in get_linear_movements()")
-    #     print("3. Checking your filtered acceleration data")
+        
